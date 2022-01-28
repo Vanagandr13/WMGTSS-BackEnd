@@ -1,0 +1,23 @@
+{
+  "name": "wmgtss-backend",
+  "version": "1.0.0",
+  "description": "WMGTSS back end",
+  "main": "index.js",
+  "scripts": {
+    "test": "back end for the WMGTSS Datafile Board"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vanagandr13/WMGTSS-BackEnd.git"
+  },
+  "author": "Jack Griffiths",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vanagandr13/WMGTSS-BackEnd/issues"
+  },
+  "homepage": "https://github.com/Vanagandr13/WMGTSS-BackEnd#readme",
+  "dependencies": {
+    "express": "^4.17.2",
+    "pg": "^8.7.1"
+  }
+}
