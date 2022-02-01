@@ -2,9 +2,12 @@
   "name": "wmgtss-backend",
   "version": "1.0.0",
   "description": "WMGTSS back end",
-  "main": "index.js",
+  "main": "dist/app.js",
   "scripts": {
-    "test": "back end for the WMGTSS Datafile Board"
+    "test": "back end for the WMGTSS Datafile Board",
+    "dev": "tsc -w & nodemon .",
+    "build": "tsc",
+    "start": "tsc & node ."
   },
   "repository": {
     "type": "git",
@@ -17,7 +20,16 @@
   },
   "homepage": "https://github.com/Vanagandr13/WMGTSS-BackEnd#readme",
   "dependencies": {
+    "@types/pg": "^8.6.4",
+    "dotenv": "^14.3.2",
     "express": "^4.17.2",
     "pg": "^8.7.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^17.0.14",
+    "nodemon": "^2.0.15",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   }
 }
