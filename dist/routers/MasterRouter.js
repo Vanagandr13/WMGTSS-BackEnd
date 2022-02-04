@@ -17,6 +17,7 @@ class MasterRouter {
      * Connect routes to their matching routers.
      */
     _configure() {
+        //options for cors midddleware
         this._router.use('/datafile', this._datafileBoardSubrouter);
     }
 }

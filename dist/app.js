@@ -7,7 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 //internal dependencies
-const MasterRouter_1 = __importDefault(require("./routers/MasterRouter"));
+const DatafileBoardRouter_1 = __importDefault(require("./routers/DatafileBoardRouter"));
 // load the environment variables from the .env file
 dotenv_1.default.config({
     path: '.env'
@@ -19,7 +19,7 @@ dotenv_1.default.config({
 class Server {
     constructor() {
         this.app = (0, express_1.default)();
-        this.router = MasterRouter_1.default;
+        this.router = DatafileBoardRouter_1.default;
     }
 }
 // initialize server app

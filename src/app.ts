@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 
 //internal dependencies
-import MasterRouter from './routers/MasterRouter'
+import DatafileBoardRouter from './routers/DatafileBoardRouter';
 
 // load the environment variables from the .env file
 dotenv.config({
@@ -16,7 +16,9 @@ dotenv.config({
  */
 class Server {
   public app = express();
-  public router = MasterRouter;
+  public router = DatafileBoardRouter;
+
+
 }
 
 // initialize server app
