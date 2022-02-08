@@ -3,6 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const express_1 = require("express");
+const express_2 = __importDefault(require("express"));
+const body_parser_1 = __importDefault(require("body-parser"));
 const cors_1 = __importDefault(require("cors"));
 const DatafileBoardController_1 = __importDefault(require("../controllers/DatafileBoardController"));
 const options = {
@@ -32,7 +34,14 @@ class DatafileBoardRouter {
      */
     _configure() {
         this._router.use((0, cors_1.default)(options));
+        this._router.use(body_parser_1.default.urlencoded({ extended: true, limit: '50mb' }));
+        this._router.use(body_parser_1.default.json({ limit: '50mb' }));
+        this._router.use('/file', express_2.default.static('C:\\WMGTSS_FileStorage'));
         this._router.get('/datafile', this._controller.getBoardClusters);
+        this._router.put('/file/upload', this._controller.uploadFile);
+        this._router.get('/file/download', this._controller.downloadFile);
+        this._router.delete('/file/delete', this._controller.deleteFile);
+        this._router.delete('/cluster/delete', this._controller.deleteFile);
     }
 }
 module.exports = new DatafileBoardRouter().router;

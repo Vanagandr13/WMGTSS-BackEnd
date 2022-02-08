@@ -18,6 +18,5 @@ export interface datafile {
     uploader: string,
     uploadDate: Date,
     fileSize: string,
-    path: string,
    // displayOrdering: number; // used by the display order files 
 }

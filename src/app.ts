@@ -1,6 +1,7 @@
 // external dependencies
 import dotenv from 'dotenv';
 import express from 'express';
+import BodyParser from 'body-parser';
 
 //internal dependencies
 import DatafileBoardRouter from './routers/DatafileBoardRouter';
@@ -25,6 +26,9 @@ class Server {
 const server = new Server();
 
 server.app.use('/api', server.router);
+//server.app.use('/api', express.static(process.env.FILE_STORAGE_PATH!));
+server.app.use(BodyParser.urlencoded({ extended: true, limit: '50mb'}));
+server.app.use(BodyParser.json({limit: '50mb'}));
 
 server.app.get('/', (req, res) => {
   res.send('Hello World!');

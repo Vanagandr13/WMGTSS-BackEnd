@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // external dependencies
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
+const body_parser_1 = __importDefault(require("body-parser"));
 //internal dependencies
 const DatafileBoardRouter_1 = __importDefault(require("./routers/DatafileBoardRouter"));
 // load the environment variables from the .env file
@@ -25,6 +26,9 @@ class Server {
 // initialize server app
 const server = new Server();
 server.app.use('/api', server.router);
+//server.app.use('/api', express.static(process.env.FILE_STORAGE_PATH!));
+server.app.use(body_parser_1.default.urlencoded({ extended: true, limit: '50mb' }));
+server.app.use(body_parser_1.default.json({ limit: '50mb' }));
 server.app.get('/', (req, res) => {
     res.send('Hello World!');
 });
