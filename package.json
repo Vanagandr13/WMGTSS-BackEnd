@@ -21,6 +21,7 @@
   "homepage": "https://github.com/Vanagandr13/WMGTSS-BackEnd#readme",
   "dependencies": {
     "@types/pg": "^8.6.4",
+    "body-parser": "^1.19.1",
     "cors": "^2.8.5",
     "dotenv": "^14.3.2",
     "express": "^4.17.2",
