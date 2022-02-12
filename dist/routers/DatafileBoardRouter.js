@@ -71,7 +71,7 @@ class DatafileBoardRouter {
                 response.sendStatus(401);
             }
         });
-        this._router.use('/cluster/delete', function (request, response, next) {
+        this._router.use('/cluster', function (request, response, next) {
             if ((0, RequestValidator_1.validateRequest)(request, ['Tutor'])) {
                 next();
             }
@@ -83,7 +83,9 @@ class DatafileBoardRouter {
         this._router.put('/file/upload', this._controller.uploadFile);
         this._router.get('/file/download', this._controller.downloadFile);
         this._router.delete('/file/delete', this._controller.deleteFile);
-        this._router.delete('/cluster/delete', this._controller.deleteFile);
+        this._router.post('/cluster/create', this._controller.createCluster);
+        this._router.put('/cluster/modify', this._controller.modifyCluster);
+        this._router.delete('/cluster/delete', this._controller.deleteCluster);
     }
 }
 module.exports = new DatafileBoardRouter().router;
