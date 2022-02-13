@@ -1,10 +1,10 @@
 // External dependencies
-import { Express, NextFunction, Request, Response, Router } from 'express';
-import { Pool, QueryResult, QueryResultBase } from 'pg';
+import {  Request, Response } from 'express';
+import { Pool } from 'pg';
 import * as fs from 'fs';
 
 // Internal dependencies
-import { datafile, datafileBoard, datafileCluster } from '../DatafileTypes';
+import { datafile, datafileCluster } from '../DatafileTypes';
 
 class DatafileBoardController {
   dbAPI: Pool; 
@@ -44,7 +44,7 @@ class DatafileBoardController {
         }
         if (row.fileid != null) // don't add null files
         {
-          let file:datafile = {fileId: row.fileid, title: row.filename, fileType: row.filename.split('.').pop(), uploader: row.uploader, uploadDate: new Date(row.uploaddate), fileSize: row.filesize };
+          let file: datafile = {fileId: row.fileid, title: row.filename, fileType: row.filename.split('.').pop(), uploader: row.uploader, uploadDate: row.uploaddate, fileSize: row.filesize, downloadCounter: row.downloadcounter };
           queryResponse.find(i => i.clusterId === row.clusterid)?.files.push(file);
         }
       }
@@ -56,7 +56,7 @@ class DatafileBoardController {
   uploadFile = async (request: Request, response: Response) =>  {
     const file = request.body;
     const date: Date = new Date()
-    const uploader:string = String(request.query.accessToken).split(",")[1];
+    const uploader: string = String(request.query.accessToken).split(",")[1];
     const dateString: string = date.getDay() + '/' + date.getMonth() + '/' + date.getFullYear();
     const filePath: string = process.env.FILE_STORAGE_PATH + '\\' + file.clusterId + '\\' + file.name; 
 
@@ -65,19 +65,29 @@ class DatafileBoardController {
       if (err) {
         console.log(err);
         response.sendStatus(500);
-      } else {
-        // first check that the cluster exists in the db, then check that no file owned by that cluster already exists
-        this.dbAPI.query('SELECT * FROM addFile($1, $2, $3, $4, $5)', [file.clusterId, file.name, "student", dateString, file.size], (error, results) => {
-          if (error) {
-            console.log(error);
-            response.sendStatus(500);
-          }
-
-          response.status(200);
-          response.send({});
-        })
       }
-    })
+      else {
+        // If file can be written to the storage system, find its size stat and then add the file to the metadatabase
+        fs.stat(filePath, (err, stats) => {
+          if (err) {
+            console.log(err);
+            response.sendStatus(500); 
+          } 
+          else {
+            // first check that the cluster exists in the db, then check that no file owned by that cluster already exists
+            this.dbAPI.query('SELECT * FROM addFile($1, $2, $3, $4, $5, $6)', [file.clusterId, file.name, uploader, dateString, getDisplayFileSize(stats.size), 0], (error, results) => {
+              if (error) {
+                console.log(error);
+                response.sendStatus(500);
+              } else {
+                response.status(200);
+                response.send({});
+              }
+            });
+          } 
+        });  
+      }
+    });
   }
 
   downloadFile = async (request: Request, response: Response) =>  {
@@ -92,16 +102,24 @@ class DatafileBoardController {
       if (results.rows.length == 1) // check that the file exists
       {
         const filePath: string = process.env.FILE_STORAGE_PATH + '\\' + String(results.rows[0].clusterid) + '\\' + String(results.rows[0].filename);
-        
+        const fileName: string = results.rows[0].filename
+
         fs.readFile(filePath, (err) => {
           if (err) {
             console.log(err);
             response.sendStatus(500);
           } else {
-            response.status(200);
-            response.setHeader('Content-disposition', 'attachment; filename=' + results.rows[0].filename);
-            response.download(filePath, results.rows[0].filename); 
-
+            this.dbAPI.query('SELECT * FROM incramentFileDownloadCounter($1)', [fileId], (error, results) => {
+              if (error) {
+                console.log(error);
+                response.sendStatus(500);
+              }
+              else {
+                response.status(200);
+                response.setHeader('Content-disposition', 'attachment; filename=' + fileName);
+                response.download(filePath, fileName); 
+              }
+            });
           }
         });
       }
@@ -211,6 +229,26 @@ class DatafileBoardController {
       }
     });
   }
+}
+
+function getDisplayFileSize(size: number): string {
+  const gigabyte: number = 1024 * 1024 * 1024;
+  const megabyte: number = 1024 * 1024;
+  const kilobyte: number = 1024;
+  
+  if (size > gigabyte) {
+    return String((size / gigabyte).toFixed(2)) + 'GB';
+  }
+  else if (size > megabyte) {
+    return String((size / megabyte).toFixed(2)) + 'MB';
+  }
+  else if (size > kilobyte) {
+    return String((size / kilobyte).toFixed(2)) + 'KB';
+  }
+  else {
+    return String(size) + 'B';
+  }
+
 }
 
 export = new DatafileBoardController();
