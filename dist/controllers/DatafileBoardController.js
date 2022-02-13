@@ -36,22 +36,27 @@ class DatafileBoardController {
             this.dbAPI.query('SELECT * FROM getBoardClusters($1)', [moduleName], (error, results) => {
                 var _a;
                 if (error) {
-                    throw error;
+                    console.log(error);
+                    response.sendStatus(500);
                 }
                 // Now construct the sql data into json that can be delivered to the front end
                 let queryResponse = [];
                 // Each row of results.rows, represents a file, so loop through and add the files to our json structure. 
                 for (let i = 0; i < results.rowCount; i++) {
                     let row = results.rows[i];
-                    // We must also create clusters in which ot place the files, but check if a cluster already exists before adding a new cluster
-                    if (!queryResponse.find(i => i.clusterId === row.clusterid)) {
+                    // We must also create clusters in which ot place the files, 
+                    // but check if a cluster already exists before adding a new cluster, also don't add null clusters.
+                    if ((row.clusterid != null) && (!queryResponse.find(i => i.clusterId === row.clusterid))) {
                         // The cluster doesn't exist yet so let's add it.
                         let cluster = { clusterId: row.clusterid, title: row.displaytitle, description: row.clusterdescription, files: [] };
                         // add it to the cluster map
                         queryResponse.push(cluster);
                     }
-                    let file = { fileId: row.fileid, title: row.filename, fileType: 'XXXXXX', uploader: row.uploader, uploadDate: new Date(row.uploaddate), fileSize: row.filesize };
-                    (_a = queryResponse.find(i => i.clusterId === row.clusterid)) === null || _a === void 0 ? void 0 : _a.files.push(file);
+                    if (row.fileid != null) // don't add null files
+                     {
+                        let file = { fileId: row.fileid, title: row.filename, fileType: row.filename.split('.').pop(), uploader: row.uploader, uploadDate: row.uploaddate, fileSize: row.filesize, downloadCounter: row.downloadcounter };
+                        (_a = queryResponse.find(i => i.clusterId === row.clusterid)) === null || _a === void 0 ? void 0 : _a.files.push(file);
+                    }
                 }
                 console.log(queryResponse);
                 response.status(200).json(queryResponse);
@@ -60,6 +65,7 @@ class DatafileBoardController {
         this.uploadFile = (request, response) => __awaiter(this, void 0, void 0, function* () {
             const file = request.body;
             const date = new Date();
+            const uploader = String(request.query.accessToken).split(",")[1];
             const dateString = date.getDay() + '/' + date.getMonth() + '/' + date.getFullYear();
             const filePath = process.env.FILE_STORAGE_PATH + '\\' + file.clusterId + '\\' + file.name;
             const base64data = file.content.replace(/^data:.*,/, '');
@@ -69,14 +75,25 @@ class DatafileBoardController {
                     response.sendStatus(500);
                 }
                 else {
-                    // first check that the cluster exists in the db, then check that no file owned by that cluster already exists
-                    this.dbAPI.query('SELECT * FROM addFile($1, $2, $3, $4, $5)', [file.clusterId, file.name, "student", dateString, file.size], (error, results) => {
-                        if (error) {
-                            throw error;
+                    // If file can be written to the storage system, find its size stat and then add the file to the metadatabase
+                    fs.stat(filePath, (err, stats) => {
+                        if (err) {
+                            console.log(err);
+                            response.sendStatus(500);
                         }
-                        response.set('Location', filePath);
-                        response.status(200);
-                        response.send(filePath);
+                        else {
+                            // first check that the cluster exists in the db, then check that no file owned by that cluster already exists
+                            this.dbAPI.query('SELECT * FROM addFile($1, $2, $3, $4, $5, $6)', [file.clusterId, file.name, uploader, dateString, getDisplayFileSize(stats.size), 0], (error, results) => {
+                                if (error) {
+                                    console.log(error);
+                                    response.sendStatus(500);
+                                }
+                                else {
+                                    response.status(200);
+                                    response.send({});
+                                }
+                            });
+                        }
                     });
                 }
             });
@@ -87,20 +104,30 @@ class DatafileBoardController {
             // now check that the file exists and find it's file name
             this.dbAPI.query('SELECT * FROM getFile($1)', [fileId], (error, results) => {
                 if (error) {
-                    throw error;
+                    console.log(error);
+                    response.sendStatus(500);
                 }
                 if (results.rows.length == 1) // check that the file exists
                  {
                     const filePath = process.env.FILE_STORAGE_PATH + '\\' + String(results.rows[0].clusterid) + '\\' + String(results.rows[0].filename);
+                    const fileName = results.rows[0].filename;
                     fs.readFile(filePath, (err) => {
                         if (err) {
                             console.log(err);
                             response.sendStatus(500);
                         }
                         else {
-                            response.status(200);
-                            response.setHeader('Content-disposition', 'attachment; filename=' + results.rows[0].filename);
-                            response.download(filePath, results.rows[0].filename);
+                            this.dbAPI.query('SELECT * FROM incramentFileDownloadCounter($1)', [fileId], (error, results) => {
+                                if (error) {
+                                    console.log(error);
+                                    response.sendStatus(500);
+                                }
+                                else {
+                                    response.status(200);
+                                    response.setHeader('Content-disposition', 'attachment; filename=' + fileName);
+                                    response.download(filePath, fileName);
+                                }
+                            });
                         }
                     });
                 }
@@ -117,7 +144,8 @@ class DatafileBoardController {
             // and the query will return the deleted data so that the file can also be deleted. 
             this.dbAPI.query('SELECT * FROM deleteFile($1)', [fileId], (error, results) => {
                 if (error) {
-                    throw error;
+                    console.log(error);
+                    response.sendStatus(500);
                 }
                 if (results.rows.length > 0) // check that the query made a deletion 
                  {
@@ -128,14 +156,53 @@ class DatafileBoardController {
                             response.sendStatus(500);
                         }
                         else {
-                            response.status(204);
+                            response.status(200);
                             response.send({});
                         }
                     });
                 }
                 else {
-                    console.log('ERROR: File not dound in DB, file not deleted.');
+                    console.log('ERROR: File not found in DB, file not deleted.');
                     response.sendStatus(500);
+                }
+            });
+        });
+        this.createCluster = (request, response) => __awaiter(this, void 0, void 0, function* () {
+            const moduleId = String(request.query.moduleId);
+            const clusterTitle = String(request.body.clusterTitle);
+            const clusterDescription = String(request.body.clusterDescription);
+            this.dbAPI.query('SELECT * FROM addCluster($1, $2, $3)', [moduleId, clusterTitle, clusterDescription], (error, results) => {
+                if (error) {
+                    console.log(error);
+                    response.sendStatus(500);
+                }
+                else {
+                    const dirPath = process.env.FILE_STORAGE_PATH + '/' + results.rows[0].clusterid;
+                    fs.mkdir(dirPath, { recursive: true }, (err) => {
+                        if (err) {
+                            console.log(err);
+                            response.sendStatus(500);
+                        }
+                        else {
+                            response.status(200);
+                            response.send({});
+                        }
+                    });
+                }
+            });
+        });
+        this.modifyCluster = (request, response) => __awaiter(this, void 0, void 0, function* () {
+            const clusterId = String(request.query.clusterId);
+            const clusterTitle = String(request.body.clusterTitle);
+            const clusterDescription = String(request.body.clusterDescription);
+            this.dbAPI.query('SELECT * FROM modifyCluster($1, $2, $3)', [clusterId, clusterTitle, clusterDescription], (error) => {
+                if (error) {
+                    console.log(error);
+                    response.sendStatus(500);
+                }
+                else {
+                    response.status(200);
+                    response.send({});
                 }
             });
         });
@@ -144,7 +211,7 @@ class DatafileBoardController {
             // now delete the cluster meta data from the database  
             this.dbAPI.query('SELECT * FROM deleteCluster($1)', [clusterId], (error, results) => {
                 if (error) {
-                    throw error;
+                    console.log(error);
                 }
                 if (results.rows.length > 0) // check that the query made a deletion 
                  {
@@ -155,7 +222,7 @@ class DatafileBoardController {
                             response.sendStatus(500);
                         }
                         else {
-                            response.status(204);
+                            response.status(200);
                             response.send({});
                         }
                     });
@@ -174,6 +241,23 @@ class DatafileBoardController {
             password: 'tutor',
             port: 5432
         });
+    }
+}
+function getDisplayFileSize(size) {
+    const gigabyte = 1024 * 1024 * 1024;
+    const megabyte = 1024 * 1024;
+    const kilobyte = 1024;
+    if (size > gigabyte) {
+        return String((size / gigabyte).toFixed(2)) + 'GB';
+    }
+    else if (size > megabyte) {
+        return String((size / megabyte).toFixed(2)) + 'MB';
+    }
+    else if (size > kilobyte) {
+        return String((size / kilobyte).toFixed(2)) + 'KB';
+    }
+    else {
+        return String(size) + 'B';
     }
 }
 module.exports = new DatafileBoardController();
