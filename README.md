@@ -1,5 +1,7 @@
 # WMGTSS-BackEnd
-WMGTSS back end 
+WMGTSS back end
+
+# Installation instructions 
 
 1. firstly make sure the Front-end and Meta-Data DB are installed correctly
 2. unpack the zip or access the repo from github https://github.com/Vanagandr13
