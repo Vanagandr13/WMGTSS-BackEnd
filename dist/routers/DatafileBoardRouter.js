@@ -2,10 +2,12 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+// External Dependencies
 const express_1 = require("express");
 const express_2 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const cors_1 = __importDefault(require("cors"));
+// Internal Dependencies
 const DatafileBoardController_1 = __importDefault(require("../controllers/DatafileBoardController"));
 const RequestValidator_1 = require("../RequestValidator");
 const options = {
@@ -37,8 +39,8 @@ class DatafileBoardRouter {
         this._router.use((0, cors_1.default)(options));
         this._router.use(body_parser_1.default.urlencoded({ extended: true, limit: '50mb' }));
         this._router.use(body_parser_1.default.json({ limit: '50mb' }));
-        this._router.use('/file', express_2.default.static('C:\\WMGTSS_FileStorage')); // do we need this?? XXXXXXXXXXXXXXXXXXXXXXXXX
-        // intercepts incoming packets to check they contain a valid token
+        this._router.use('/file', express_2.default.static('C:\\WMGTSS_FileStorage'));
+        // Intercept incoming packets to check they contain a valid token
         this._router.use('/datafile', function (request, response, next) {
             if ((0, RequestValidator_1.validateRequest)(request, ['Student', 'Tutor'])) {
                 next();
@@ -79,6 +81,7 @@ class DatafileBoardRouter {
                 response.sendStatus(401);
             }
         });
+        // Configure Routes
         this._router.get('/datafile', this._controller.getBoardClusters);
         this._router.put('/file/upload', this._controller.uploadFile);
         this._router.get('/file/download', this._controller.downloadFile);
