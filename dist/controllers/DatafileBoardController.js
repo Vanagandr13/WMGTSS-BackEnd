@@ -235,10 +235,10 @@ class DatafileBoardController {
         });
         // initialize the DB API
         this.dbAPI = new pg_1.Pool({
-            user: 'tutor',
+            user: 'backendapp',
             host: 'localhost',
             database: 'datafiledb',
-            password: 'tutor',
+            password: 'backendapp',
             port: 5432
         });
     }

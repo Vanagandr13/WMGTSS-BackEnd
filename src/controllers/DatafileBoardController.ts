@@ -12,10 +12,10 @@ class DatafileBoardController {
   {
     // initialize the DB API
     this.dbAPI = new Pool({
-      user:'tutor',
+      user:'backendapp',
       host:'localhost',
       database:'datafiledb',
-      password: 'tutor',
+      password: 'backendapp',
       port: 5432
     });
   }
@@ -33,7 +33,7 @@ class DatafileBoardController {
       for (let i = 0; i < results.rowCount; i++)
       {
         let row = results.rows[i];
-        // We must also create clusters in which ot place the files, 
+        // We must also create clusters in which to place the files, 
         // but check if a cluster already exists before adding a new cluster, also don't add null clusters.
         if ((row.clusterid != null) && (!queryResponse.find(i => i.clusterId === row.clusterid)))
         {
