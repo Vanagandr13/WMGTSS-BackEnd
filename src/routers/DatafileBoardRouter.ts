@@ -1,7 +1,10 @@
-import { NextFunction, Request, response, Response, Router } from 'express';
+// External Dependencies
+import { Request, Response, Router } from 'express';
 import express from 'express';
 import BodyParser from 'body-parser';
 import cors from 'cors';
+
+// Internal Dependencies
 import DatafileBoardController from '../controllers/DatafileBoardController';
 import { validateRequest } from '../RequestValidator';
 
@@ -18,7 +21,6 @@ const options: cors.CorsOptions = {
   origin: 'http://localhost:4200',
   preflightContinue: false,
 };
-
 
 class DatafileBoardRouter {
   private _router = Router();
@@ -39,9 +41,9 @@ class DatafileBoardRouter {
     this._router.use(cors(options));
     this._router.use(BodyParser.urlencoded({ extended: true, limit: '50mb'}));
     this._router.use(BodyParser.json({ limit: '50mb' }));
-    this._router.use('/file', express.static('C:\\WMGTSS_FileStorage')); // do we need this?? XXXXXXXXXXXXXXXXXXXXXXXXX
-    
-    // intercepts incoming packets to check they contain a valid token
+    this._router.use('/file', express.static('C:\\WMGTSS_FileStorage'));
+
+    // Intercept incoming packets to check they contain a valid token
     this._router.use('/datafile', function (request: Request, response: Response, next) {
       if (validateRequest(request, ['Student', 'Tutor']))
       {
@@ -51,7 +53,7 @@ class DatafileBoardRouter {
       {
         response.sendStatus(401);
       }
-    })
+    });
 
     this._router.use('/file/upload', function (request: Request, response: Response, next) {
       if (validateRequest(request, ['Tutor']))
@@ -62,7 +64,7 @@ class DatafileBoardRouter {
       {
         response.sendStatus(401);
       }
-    })
+    });
 
     this._router.use('/file/download', function (request: Request, response: Response, next) {
       if (validateRequest(request, ['Student', 'Tutor']))
@@ -73,7 +75,7 @@ class DatafileBoardRouter {
       {
         response.sendStatus(401);
       }
-    })
+    });
 
     this._router.use('/file/delete', function (request: Request, response: Response, next) {
       if (validateRequest(request, ['Tutor']))
@@ -84,7 +86,7 @@ class DatafileBoardRouter {
       {
         response.sendStatus(401);
       }
-    })
+    });
 
     this._router.use('/cluster', function (request: Request, response: Response, next) {
       if (validateRequest(request, ['Tutor']))
@@ -95,8 +97,9 @@ class DatafileBoardRouter {
       {
         response.sendStatus(401);
       }
-    })
+    });
 
+    // Configure Routes
     this._router.get('/datafile', this._controller.getBoardClusters);
     this._router.put('/file/upload', this._controller.uploadFile);
     this._router.get('/file/download', this._controller.downloadFile);
